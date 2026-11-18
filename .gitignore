@@ -1,8 +1,69 @@
+# Unity generated folders and files
 Library/
+Library/**
 Temp/
+Temp/**
 Logs/
+Logs/**
 obj/
+obj/**
 UserSettings/
+UserSettings/**
+MemoryCaptures/
+Recordings/
+Build/
+Build/**
+Builds/
+Builds/**
+artifacts/
+artifacts/**
+TestResults/
+TestResults/**
+*.unitypackage
+*.apk
+*.aab
+*.app
+
+# Unity / IDE project files
 .vs/
+.vscode/
+.idea/
 *.csproj
 *.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.unityproj
+
+# macOS
+.DS_Store
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.ulf
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Release and build metadata produced locally
+BUILD_INFO.txt

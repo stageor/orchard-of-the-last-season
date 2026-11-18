@@ -1,0 +1,31 @@
+# Orchard of the Last Season — ownership and review routing.
+#
+# This file routes review requests. It does NOT enforce the approval policy:
+# CODEOWNERS cannot require "the other two of exactly three people" or an
+# author signoff. The required `Review gate` check (scripts/check_approvals.py)
+# is authoritative.
+#
+# Replace every REPLACE_ME_ login with the real GitHub username and keep the
+# three names in sync with .github/team.json.
+
+*                                   @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+
+# CI, security and repository automation.
+/.github/                           @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/scripts/                           @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/tests/ci/                          @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/.gitignore                         @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/.gitattributes                     @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+
+# Unity project settings, packages and the runtime contract.
+/ProjectSettings/                   @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/Packages/                          @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/Assets/Orchard/Editor/             @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/Assets/Orchard/Tests/              @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/Assets/Orchard/Scenes/             @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/AGENTS.md                          @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+
+# Gameplay code and documentation still require the full three-person policy,
+# but day-to-day review routing can stay with the whole roster.
+/Assets/Orchard/Scripts/            @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu
+/docs/                              @REPLACE_ME_stanley @REPLACE_ME_zian @REPLACE_ME_manu

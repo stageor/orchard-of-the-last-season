@@ -1,0 +1,136 @@
+name: Unity tests (reusable)
+
+# Reusable EditMode/PlayMode runner.
+#
+# The editor version and the GameCI image are derived from
+# ProjectSettings/ProjectVersion.txt by scripts/unity_version.py. Never add a
+# version literal here: a silent editor upgrade would invalidate every build.
+#
+# A green container is not enough. scripts/test_summary.py parses the NUnit XML
+# and fails when tests failed, were skipped, were not discovered, or came from
+# the wrong namespace.
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "editmode or playmode"
+        required: true
+        type: string
+      minTests:
+        description: "Minimum number of discovered tests before the run can pass"
+        required: false
+        type: number
+        default: 1
+      regression:
+        description: "Run the expanded deterministic nightly seed sweep"
+        required: false
+        type: boolean
+        default: false
+      retentionDays:
+        description: "Artifact retention in days"
+        required: false
+        type: number
+        default: 14
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare Unity image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image: ${{ steps.unity.outputs.image }}
+      version: ${{ steps.unity.outputs.version }}
+      revision: ${{ steps.unity.outputs.revision }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Resolve editor version and image
+        id: unity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/unity_version.py --json --flavor base > "$RUNNER_TEMP/unity.json"
+          cat "$RUNNER_TEMP/unity.json"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          info = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "unity.json"), encoding="utf-8"))
+          print(f"image={info['image']}")
+          print(f"version={info['version']}")
+          print(f"revision={info['revision'] or ''}")
+          PY
+
+  test:
+    name: Unity ${{ inputs.mode }} tests
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          lfs: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: Library
+          key: unity-library-${{ runner.os }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-${{ runner.os }}-${{ needs.prepare.outputs.version }}-
+
+      - name: Run ${{ inputs.mode }} tests
+        id: tests
+        uses: game-ci/unity-test-runner@32e57712352b500e17974b245a6dce9e11a73213
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          ORCHARD_REGRESSION: ${{ inputs.regression && '1' || '0' }}
+        with:
+          projectPath: .
+          testMode: ${{ inputs.mode }}
+          customImage: ${{ needs.prepare.outputs.image }}
+          artifactsPath: TestResults/${{ inputs.mode }}
+          githubToken: ""
+          checkName: Unity ${{ inputs.mode }} tests
+          coverageEnabled: false
+
+      - name: Parse NUnit results
+        if: always()
+        shell: bash
+        env:
+          ORCHARD_REGRESSION: ${{ inputs.regression && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          python3 scripts/test_summary.py \
+            --results-dir "TestResults/${{ inputs.mode }}" \
+            --label "${{ inputs.mode }}" \
+            --min-tests "${{ inputs.minTests }}" \
+            --require-namespace Orchard.Tests \
+            --out-json "TestResults/${{ inputs.mode }}-summary.json" \
+            --out-markdown "TestResults/${{ inputs.mode }}-summary.md" \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: unity-${{ inputs.mode }}-results-${{ github.run_id }}
+          path: TestResults/${{ inputs.mode }}
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retentionDays }}

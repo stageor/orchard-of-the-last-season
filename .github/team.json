@@ -1,0 +1,28 @@
+{
+  "$comment": "Single source of truth for the three-person review roster. The Review gate check fails closed while any login starts with REPLACE_ME_. Replace all three placeholders with the real GitHub usernames, then update .github/CODEOWNERS and the branch-protection reviewers to match. Do not add a fourth member: approval_policy.py enforces exactly three.",
+  "members": [
+    {
+      "name": "Stanley",
+      "login": "REPLACE_ME_stanley",
+      "role": "reviewer"
+    },
+    {
+      "name": "Zian",
+      "login": "REPLACE_ME_zian",
+      "role": "reviewer"
+    },
+    {
+      "name": "Manu",
+      "login": "REPLACE_ME_manu",
+      "role": "reviewer"
+    }
+  ],
+  "requiredApprovals": {
+    "memberAuthored": 2,
+    "externalAuthored": 3
+  },
+  "commands": {
+    "signoff": "/signoff",
+    "protectedCi": "/approve-ci"
+  }
+}

@@ -1,0 +1,52 @@
+name: Feature or AI subsystem request
+description: Propose a gameplay, syllabus or engineering change.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The runtime must keep all 18 syllabus AI techniques available. Say which
+        technique or contract rule this affects.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing or hard to inspect today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the behaviour and how it can be verified.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - A* / flow field / influence map
+        - Flocking / blackboard / rule engine
+        - GOAP / behaviour tree / FSM
+        - Naive Bayes / ID3 / Q-learning / n-gram
+        - Fuzzy logic / minimax / neural network / genetic algorithm
+        - Procedural generation / player modelling / DDA
+        - Overlay and thought bubbles
+        - Tests and CI
+        - Build and release
+        - Documentation
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Contract risks
+      description: Note any effect on controls, camera, assets, seeds or determinism.
+    validations:
+      required: false

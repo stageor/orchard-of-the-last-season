@@ -1,10 +1,36 @@
 # Orchard of the Last Season
 
+[![CI](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/ci.yml)
+[![Security](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/security.yml)
+[![Nightly regression](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/nightly-regression.yml/badge.svg?branch=main)](https://github.com/stageor/orchard-of-the-last-season/actions/workflows/nightly-regression.yml)
+
+## CI, tests and releases
+
+- **Tests:** real Unity EditMode coverage for A*, Shambler utility AI, Pip's
+  behaviour tree, Thistle's FSM, map generation and gameplay, plus a PlayMode
+  bootstrap smoke test. See [`docs/TESTING.md`](docs/TESTING.md).
+- **Required checks:** `Required checks` aggregates repository health, C# contract
+  analysis, EditMode, PlayMode, Windows x64 and WebGL. A failed, cancelled or
+  unexpectedly skipped mandatory job blocks the merge. See
+  [`docs/CI_CD.md`](docs/CI_CD.md).
+- **Review policy:** Stanley, Zian and Manu. A member-authored PR needs the other
+  two approvals and an author `/signoff <head-sha>`; an external PR needs all
+  three. See [`docs/APPROVAL_POLICY.md`](docs/APPROVAL_POLICY.md).
+- **Builds:** download `orchard-windows-x64` or `orchard-webgl` from the CI run's
+  **Artifacts** section, or from **Releases** for tagged versions. WebGL
+  compression is Disabled so the build runs from any static host. See
+  [`docs/BUILD_AND_RELEASE.md`](docs/BUILD_AND_RELEASE.md).
+- **Unity version:** CI reads the exact editor version from
+  `ProjectSettings/ProjectVersion.txt`. Do not silently upgrade it.
+- **Contributing and security:** [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+  [`SECURITY.md`](SECURITY.md).
+
 ## How to open and play
 1. Unzip this folder anywhere.
 2. Open Unity Hub, click Add, then "Add project from disk", and select the
    `OrchardOfTheLastSeason` folder.
-3. Open it with Unity 6000.3.25f1 (any Unity 6 version works).
+3. Open it with Unity 6000.3.25f1 (any Unity 6 version works for local play; CI
+   uses the exact version in `ProjectSettings/ProjectVersion.txt`).
 4. Press Play. No scene setup is needed: the game builds itself in whatever scene is open.
 
 ## Sharp picture (no blur)

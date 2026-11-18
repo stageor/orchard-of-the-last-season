@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "description": "Pre-existing Orchard contract deviations retained to avoid changing gameplay, controls or visuals. New violations must not be added. Remove an entry when the underlying code is fixed.",
+  "entries": [
+    {
+      "rule": "input.mouse_event",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "else if (e.type == EventType.MouseDown && e.button == 0)",
+      "note": "Legacy OnGUI UI start-button handling. Keyboard Enter also starts the run; retained for existing UI behaviour."
+    },
+    {
+      "rule": "input.mouse_event",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "ui.PointerDown(new Vector2(e.mousePosition.x, Screen.height - e.mousePosition.y));",
+      "note": "Legacy UI pointer forwarding. Not used by the farming controls; retained for existing UI behaviour."
+    },
+    {
+      "rule": "input.mouse_event",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "else if (e.type == EventType.MouseUp && e.button == 0)",
+      "note": "Legacy OnGUI UI release handling. Retained for existing UI behaviour."
+    },
+    {
+      "rule": "input.mouse_event",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "ui.PointerUp(new Vector2(e.mousePosition.x, Screen.height - e.mousePosition.y));",
+      "note": "Legacy UI pointer forwarding. Retained for existing UI behaviour."
+    },
+    {
+      "rule": "input.key",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "case KeyCode.F: return  ;",
+      "note": "F is the existing catch key. The keyboard contract lists X / Shift for the ranged dart; changing this would alter controls."
+    },
+    {
+      "rule": "input.key",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "case KeyCode.KeypadEnter: return  ;",
+      "note": "Numpad Enter is accepted as an alias for starting/advancing. Changing it would alter existing controls."
+    },
+    {
+      "rule": "external_asset.resources_load",
+      "file": "Assets/Orchard/Scripts/OrchardGame.cs",
+      "snippet": "TextAsset ta = Resources.Load<TextAsset>(  + n);",
+      "note": "Pre-existing raw sprite bytes under Assets/Resources/OrchardSprites. Removing them would change the game's visuals, which this CI work must not do."
+    }
+  ]
+}

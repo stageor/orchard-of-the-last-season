@@ -1,0 +1,3 @@
+# Dependencies for the repository-health and review-gate jobs.
+# Keep this file pinned; Dependabot updates it through a pull request.
+PyYAML==6.0.3

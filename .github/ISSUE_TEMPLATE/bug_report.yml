@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a gameplay, rendering, input or build defect.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste Unity licence files, tokens, `.env` contents or private logs.
+        Security issues belong in the private process described in `SECURITY.md`.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A clear description of the defect.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Start a run on night 2.
+        2. Move to the east orchard.
+        3. Observe the shambler pack.
+    validations:
+      required: true
+
+  - type: input
+    id: unity
+    attributes:
+      label: Unity version
+      description: Read it from ProjectSettings/ProjectVersion.txt, do not guess.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: Build
+      options:
+        - Unity Editor
+        - Windows x64 CI artifact
+        - WebGL CI artifact
+        - Local standalone build
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Remove machine paths, usernames and licence data first.
+    validations:
+      required: false

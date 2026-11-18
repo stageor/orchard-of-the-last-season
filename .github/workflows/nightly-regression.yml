@@ -1,0 +1,50 @@
+name: Nightly regression
+
+# Nightly deterministic seed sweep and platform smoke tests.
+#
+# This workflow is intentionally separate from the pull-request checks. It runs
+# the same real tests with ORCHARD_REGRESSION=1, which expands RegressionTests
+# from 8 fixed seeds to 32 fixed seeds, then rebuilds WebGL so the static-hosting
+# contract cannot drift between releases. A failure opens no pull request; it
+# fails the scheduled run and notifies the maintainers.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-regression
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  editmode-regression:
+    name: EditMode regression sweep
+    uses: ./.github/workflows/unity-tests.yml
+    with:
+      mode: editmode
+      minTests: 120
+      regression: true
+      retentionDays: 30
+    secrets: inherit
+
+  playmode-smoke:
+    name: PlayMode smoke
+    uses: ./.github/workflows/unity-tests.yml
+    with:
+      mode: playmode
+      minTests: 1
+      regression: true
+      retentionDays: 30
+    secrets: inherit
+
+  webgl-contract:
+    name: WebGL static-hosting contract
+    uses: ./.github/workflows/unity-build.yml
+    with:
+      target: WebGL
+      retentionDays: 7
+    secrets: inherit

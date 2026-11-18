@@ -98,6 +98,18 @@ namespace Orchard
     {
         static System.Random rng = new System.Random();
 
+        // deterministic runs for tests and regression harnesses. the shipped game keeps
+        // the unseeded default, so player-facing behaviour is unchanged.
+        public static void SetSeed(int seed)
+        {
+            rng = new System.Random(seed);
+        }
+
+        public static void ResetRandom()
+        {
+            rng = new System.Random();
+        }
+
         // same as Math.random(): 0 <= v < 1
         public static double R()
         {

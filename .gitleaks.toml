@@ -1,0 +1,36 @@
+# Secret scanning configuration for gitleaks.
+#
+# The project must never contain credentials. The allowlist below only covers
+# files that are intentionally public and cannot contain live secrets.
+title = "Orchard of the Last Season"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public, non-secret files and generated test fixtures"
+paths = [
+  '''(^|/)docs/''',
+  '''(^|/)tests/ci/test_check_approvals\.py$''',
+  '''(^|/)tests/ci/test_verify_build\.py$''',
+]
+
+regexes = [
+  '''REPLACE_ME_[A-Za-z0-9_]+''',
+]
+
+commits = []
+
+[[rules]]
+id = "orchard-unity-license"
+description = "Unity license files and serial numbers must never be committed"
+regex = '''(?i)(Unity_lic\.ulf|m_SerialNumber|serial[_-]?number\s*[:=])'''
+tags = ["unity", "license"]
+severity = "HIGH"
+
+[[rules]]
+id = "orchard-webhook-and-tokens"
+description = "Repository, release and webhook tokens"
+regex = '''(?i)(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})'''
+tags = ["token", "github"]
+severity = "HIGH"

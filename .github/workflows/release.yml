@@ -1,0 +1,131 @@
+name: Release
+
+# Publish a GitHub Release for an annotated v* tag.
+#
+# The tag must point at a commit that is already on main. Branch protection
+# requires the commit's `Required checks` run to be green before it can reach
+# main; the release engineer must confirm that run before tagging. This workflow
+# then rebuilds both players from that exact commit, verifies them again,
+# packages them with checksums and only then creates the release. It never
+# commits build output to the repository.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Release build Windows x64
+    uses: ./.github/workflows/unity-build.yml
+    with:
+      target: StandaloneWindows64
+      retentionDays: 30
+    secrets: inherit
+
+  build-webgl:
+    name: Release build WebGL
+    uses: ./.github/workflows/unity-build.yml
+    with:
+      target: WebGL
+      retentionDays: 30
+    secrets: inherit
+
+  publish:
+    name: Publish release
+    needs:
+      - build-windows
+      - build-webgl
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Require the tag to be on main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "::error::Tag $GITHUB_REF_NAME points at a commit that is not on main."
+            exit 1
+          fi
+
+      - name: Require a semantic version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$GITHUB_REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+            echo "::error::Tag $GITHUB_REF_NAME is not a semantic version such as v1.2.3."
+            exit 1
+          fi
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: orchard-windows-x64
+          path: artifacts/orchard-windows-x64
+
+      - name: Download WebGL artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: orchard-webgl
+          path: artifacts/orchard-webgl
+
+      - name: Re-verify Windows artifact
+        run: |
+          python3 scripts/verify_build.py \
+            --target windows \
+            --root artifacts/orchard-windows-x64 \
+            --expected-commit "$GITHUB_SHA" \
+            --min-size 50000000 \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Re-verify WebGL artifact
+        run: |
+          python3 scripts/verify_build.py \
+            --target webgl \
+            --root artifacts/orchard-webgl \
+            --expected-commit "$GITHUB_SHA" \
+            --min-size 5000000 \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Package downloads and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd artifacts/orchard-windows-x64 && zip -qr ../orchard-windows-x64.zip .)
+          (cd artifacts/orchard-webgl && zip -qr ../orchard-webgl.zip .)
+          (cd artifacts && shasum -a 256 orchard-windows-x64.zip orchard-webgl.zip > SHA256SUMS.txt)
+          cat artifacts/SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3
+        with:
+          name: Orchard of the Last Season ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          files: |
+            artifacts/orchard-windows-x64.zip
+            artifacts/orchard-webgl.zip
+            artifacts/SHA256SUMS.txt

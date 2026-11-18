@@ -1,0 +1,64 @@
+name: Review gate
+
+# The required three-person approval check.
+#
+# Security: this workflow runs on pull_request_target, pull_request_review and
+# issue_comment so it can read reviews and write a check run even for fork PRs.
+# It checks out ONLY the repository default branch. It must never check out
+# github.event.pull_request.head.sha/ref: doing so would execute untrusted PR
+# code with a write-scoped token.
+#
+# scripts/check_approvals.py reads PR metadata, reviews, comments and filenames
+# through the GitHub API. It never executes PR code.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  issue_comment:
+    types: [created, edited, deleted]
+
+concurrency:
+  group: review-gate-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+  checks: write
+
+jobs:
+  gate:
+    name: Review gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
+      checks: write
+    steps:
+      - name: Check out trusted default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Enforce three-person approval policy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/check_approvals.py \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --team-file .github/team.json \
+            --github-summary "$GITHUB_STEP_SUMMARY"

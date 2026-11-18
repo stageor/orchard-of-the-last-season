@@ -1,0 +1,158 @@
+name: Unity build (reusable)
+
+# Reusable Windows x64 / WebGL builder.
+#
+# The editor image is derived from ProjectSettings/ProjectVersion.txt, never
+# hard-coded. Assets/Orchard/Editor/CI/OrchardBuild.cs performs the build and
+# writes BUILD_INFO.txt with the editor version, commit and WebGL compression
+# mode. scripts/verify_build.py then proves that the artifact is a real player
+# before it can be uploaded or released.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "StandaloneWindows64 or WebGL"
+        required: true
+        type: string
+      retentionDays:
+        description: "Artifact retention in days"
+        required: false
+        type: number
+        default: 14
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare ${{ inputs.target }} build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image: ${{ steps.build.outputs.image }}
+      version: ${{ steps.build.outputs.version }}
+      outputPath: ${{ steps.build.outputs.outputPath }}
+      buildMethod: ${{ steps.build.outputs.buildMethod }}
+      verifyTarget: ${{ steps.build.outputs.verifyTarget }}
+      minSize: ${{ steps.build.outputs.minSize }}
+      artifactName: ${{ steps.build.outputs.artifactName }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Resolve image and target paths
+        id: build
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            StandaloneWindows64)
+              flavor="windows-mono"
+              output="Build/Windows"
+              method="Orchard.CI.OrchardBuild.BuildWindows"
+              verify="windows"
+              min_size="50000000"
+              artifact="orchard-windows-x64"
+              ;;
+            WebGL)
+              flavor="webgl"
+              output="Build/WebGL"
+              method="Orchard.CI.OrchardBuild.BuildWebGL"
+              verify="webgl"
+              min_size="5000000"
+              artifact="orchard-webgl"
+              ;;
+            *)
+              echo "::error::Unsupported build target: $TARGET"
+              exit 2
+              ;;
+          esac
+          image="$(python3 scripts/unity_version.py --image --flavor "$flavor")"
+          version="$(python3 scripts/unity_version.py)"
+          {
+            echo "image=$image"
+            echo "version=$version"
+            echo "outputPath=$output"
+            echo "buildMethod=$method"
+            echo "verifyTarget=$verify"
+            echo "minSize=$min_size"
+            echo "artifactName=$artifact"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ inputs.target }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          lfs: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: Library
+          key: unity-library-${{ runner.os }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-${{ runner.os }}-${{ needs.prepare.outputs.version }}-
+
+      - name: Build player
+        uses: game-ci/unity-builder@eb1b9fba120c6e62c9fb7a7a81d6c107ce004c45
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        with:
+          projectPath: .
+          targetPlatform: ${{ inputs.target }}
+          customImage: ${{ needs.prepare.outputs.image }}
+          buildMethod: ${{ needs.prepare.outputs.buildMethod }}
+          versioning: None
+          allowDirtyBuild: false
+
+      - name: Verify build artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_build.py \
+            --target "${{ needs.prepare.outputs.verifyTarget }}" \
+            --root "${{ needs.prepare.outputs.outputPath }}" \
+            --expected-commit "${{ github.sha }}" \
+            --min-size "${{ needs.prepare.outputs.minSize }}" \
+            --out-json "${{ needs.prepare.outputs.artifactName }}-verification.json" \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ needs.prepare.outputs.artifactName }}
+          path: ${{ needs.prepare.outputs.outputPath }}
+          if-no-files-found: error
+          retention-days: ${{ inputs.retentionDays }}
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ needs.prepare.outputs.artifactName }}-verification
+          path: ${{ needs.prepare.outputs.artifactName }}-verification.json
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retentionDays }}

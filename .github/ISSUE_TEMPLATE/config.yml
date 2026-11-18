@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CI, testing and release guide
+    url: https://github.com/stageor/orchard-of-the-last-season/blob/main/docs/CI_CD.md
+    about: How the required checks, artifacts and releases work.
+  - name: Approval policy
+    url: https://github.com/stageor/orchard-of-the-last-season/blob/main/docs/APPROVAL_POLICY.md
+    about: The exact three-person review and signoff rules.
+  - name: Security policy
+    url: https://github.com/stageor/orchard-of-the-last-season/blob/main/SECURITY.md
+    about: Report vulnerabilities privately instead of opening an issue.
